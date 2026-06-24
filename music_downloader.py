@@ -8,48 +8,67 @@ if not os.path.exists(DOWNLOADS_DIR):
     os.makedirs(DOWNLOADS_DIR)
 
 def download_audio_sync(query: str):
-    """
-    Qidiruv so'rovi orqali YouTube'dan audioni qidiradi va yuklaydi.
-    Yangi fayl yo'li, video sarlavhasi, kanali, va rasmi qaytariladi.
-    """
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOADS_DIR, f"{file_id}.%(ext)s")
     
-    ydl_opts = {
+    # Faqat qidirish uchun (download=False)
+    search_opts = {
+        'extract_flat': True,
+        'quiet': True,
+        'extractor_args': {'youtube': ['player_client=android']},
+    }
+    
+    # Yuklash uchun
+    dl_opts = {
         'format': 'm4a/bestaudio/best',
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        'extract_flat': False,
         'extractor_args': {'youtube': ['player_client=android']},
     }
-    
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            try:
-                info = ydl.extract_info(f"ytsearch1:{query}", download=True)
-            except Exception as e:
-                print(f"YouTube block qildi, SoundCloud orqali qidirilmoqda... {e}")
-                info = ydl.extract_info(f"scsearch1:{query}", download=True)
 
-            if 'entries' in info and len(info['entries']) > 0:
-                info = info['entries'][0]
-            elif 'entries' in info:
-                return None
-            
-            ext = info.get('ext', 'm4a')
-            file_path = os.path.join(DOWNLOADS_DIR, f"{file_id}.{ext}")
-            
-            return {
-                "file_path": file_path,
-                "title": info.get('title', 'Unknown Title'),
-                "uploader": info.get('uploader', 'Unknown Artist'),
-                "thumbnail": info.get('thumbnail', None),
-                "duration": int(info.get('duration') or 0)
-            }
-        except Exception as e:
-            print(f"Error downloading {query}: {e}")
-            return None
+    # YouTube'dan 3 ta, SoundCloud'dan 5 ta natija qidiramiz
+    search_queries = [f"ytsearch3:{query}", f"scsearch5:{query}"]
+    
+    with yt_dlp.YoutubeDL(search_opts) as ydl_search:
+        with yt_dlp.YoutubeDL(dl_opts) as ydl_dl:
+            for sq in search_queries:
+                try:
+                    search_result = ydl_search.extract_info(sq, download=False)
+                    if not search_result or 'entries' not in search_result:
+                        continue
+                        
+                    for entry in search_result['entries']:
+                        url = entry.get('url')
+                        if not url:
+                            continue
+                            
+                        try:
+                            # Har bir topilgan manzilni yuklab ko'rish
+                            print(f"Trying to download: {url}")
+                            info = ydl_dl.extract_info(url, download=True)
+                            if not info:
+                                continue
+                                
+                            ext = info.get('ext', 'm4a')
+                            file_path = os.path.join(DOWNLOADS_DIR, f"{file_id}.{ext}")
+                            
+                            if os.path.exists(file_path):
+                                return {
+                                    "file_path": file_path,
+                                    "title": info.get('title', 'Unknown Title'),
+                                    "uploader": info.get('uploader', 'Unknown Artist'),
+                                    "thumbnail": info.get('thumbnail', None),
+                                    "duration": int(info.get('duration') or 0)
+                                }
+                        except Exception as e:
+                            print(f"Failed to download {url}: {e}")
+                            continue # Agar DRM yoki bot protection bo'lsa, keyingisiga o'tadi
+                except Exception as e:
+                    print(f"Search failed for {sq}: {e}")
+                    continue
+                    
+    return None
 
 async def download_audio(query: str):
     """Sinxron yuklash funksiyasini asinxron holda chaqiradi"""
