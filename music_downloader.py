@@ -45,7 +45,7 @@ def download_audio_sync(query: str):
                 "title": info.get('title', 'Unknown Title'),
                 "uploader": info.get('uploader', 'Unknown Artist'),
                 "thumbnail": info.get('thumbnail', None),
-                "duration": info.get('duration', 0)
+                "duration": int(info.get('duration') or 0)
             }
         except Exception as e:
             print(f"Error downloading {query}: {e}")
