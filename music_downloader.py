@@ -22,6 +22,7 @@ def download_audio_sync(query: str):
         'quiet': True,
         'default_search': 'ytsearch1',
         'extract_flat': False,
+        'extractor_args': {'youtube': ['player_client=ios,android,web']},
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
