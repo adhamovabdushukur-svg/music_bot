@@ -6,6 +6,7 @@ from aiogram.filters import Command
 from aiogram.types import FSInputFile
 from config import BOT_TOKEN
 from music_downloader import download_audio
+from keep_alive import keep_alive
 
 # Loglashni yoqish
 logging.basicConfig(level=logging.INFO)
@@ -73,6 +74,7 @@ async def handle_music_query(message: types.Message):
 
 async def main():
     print("Bot ishga tushmoqda...")
+    keep_alive()
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
