@@ -47,12 +47,17 @@ async def handle_music_query(message: types.Message):
         duration = result['duration']
         
         try:
+            import html
+
             # Faylni yuborish
-            audio = FSInputFile(file_path, filename=f"{title}.{file_path.split('.')[-1]}")
+            safe_title = "".join([c for c in title if c.isalpha() or c.isdigit() or c==' ']).rstrip()
+            if not safe_title: safe_title = "Audio"
+            
+            audio = FSInputFile(file_path, filename=f"{safe_title}.{file_path.split('.')[-1]}")
             
             await message.reply_audio(
                 audio=audio,
-                caption=f"🎵 <b>{title}</b>\n👤 {uploader}",
+                caption=f"🎵 <b>{html.escape(title)}</b>\n👤 {html.escape(uploader)}",
                 title=title,
                 performer=uploader,
                 duration=duration,
