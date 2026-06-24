@@ -20,19 +20,23 @@ def download_audio_sync(query: str):
         'outtmpl': output_template,
         'noplaylist': True,
         'quiet': True,
-        'default_search': 'ytsearch1',
         'extract_flat': False,
         'extractor_args': {'youtube': ['player_client=android']},
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
-            info = ydl.extract_info(query, download=True)
-            if 'entries' in info:
-                # Agar qidiruv natijasi bo'lsa
+            try:
+                info = ydl.extract_info(f"ytsearch1:{query}", download=True)
+            except Exception as e:
+                print(f"YouTube block qildi, SoundCloud orqali qidirilmoqda... {e}")
+                info = ydl.extract_info(f"scsearch1:{query}", download=True)
+
+            if 'entries' in info and len(info['entries']) > 0:
                 info = info['entries'][0]
+            elif 'entries' in info:
+                return None
             
-            # Haqiqiy kengaytmani olish
             ext = info.get('ext', 'm4a')
             file_path = os.path.join(DOWNLOADS_DIR, f"{file_id}.{ext}")
             
